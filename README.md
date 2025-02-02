@@ -10,6 +10,11 @@ You can simply paste the `world_duplicator.py` into a compiler like **VS Code** 
 
 ---
 
+## **⚡ Tips for Identifying Your World**  
+A **smart way** to determine which world you want to edit is by checking the **date modified** column in your file explorer. After leaving a game, the world files will update with the latest timestamp, allowing you to easily identify the most recently played world.
+
+---
+
 ## **Requirements**  
 Before running this tool, ensure you have:
 
