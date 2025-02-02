@@ -4,6 +4,8 @@ A Python-based tool that allows you to safely duplicate your Enshrouded game wor
 ⚠ Important Notice
 Before using this tool, back up your Enshrouded save directory manually. While this script is designed to safely duplicate worlds, unforeseen issues could result in data loss or corruption. Proceed at your own risk.
 
+You can simply paste the world_duplicator.py into a compiler like VS Code and run it.
+
 Requirements
 Before running this tool, ensure you have:
 
