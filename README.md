@@ -62,6 +62,21 @@ Run the script:
   python world_duplicator.py
   ```
 
+### **Command-line usage**
+You can bypass the graphical interface and duplicate worlds directly from the command line:
+
+```shell
+python world_duplicator.py --source <world_id> --target <world_id>
+```
+
+Provide a custom save directory if it cannot be auto-detected:
+
+```shell
+python world_duplicator.py --source <src_id> --target <dst_id> --save-dir "/path/to/Enshrouded"
+```
+
+Both `--source` and `--target` must be valid world IDs. The script will report success or failure via the command line.
+
 ### **Using the program:**
 - The tool attempts to detect your save directory automatically on startup. It looks in:
   - `%APPDATA%\\Roaming\\Enshrouded` (Windows)

@@ -6,6 +6,8 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 import time
+import argparse
+import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
@@ -419,6 +421,50 @@ class WorldDuplicatorGUI:
                 self.status_label.config(text=f"Error: {str(e)}")
 
 def main():
+    """Entry point for CLI or GUI mode."""
+    parser = argparse.ArgumentParser(
+        description="Duplicate Enshrouded worlds without launching the GUI"
+    )
+    parser.add_argument("--source", help="ID of the source world to copy")
+    parser.add_argument(
+        "--target", help="ID of the target world to replace with the copy"
+    )
+    parser.add_argument(
+        "--save-dir",
+        type=Path,
+        default=guess_save_directory(),
+        help="Path to Enshrouded save directory (default: auto-detected)",
+    )
+
+    args = parser.parse_args()
+
+    if args.source and args.target:
+        save_dir = args.save_dir
+        if not save_dir:
+            logging.error("Save directory not specified and could not be guessed")
+            print("Error: save directory not specified and could not be guessed.")
+            sys.exit(1)
+
+        wm = WorldManager()
+        try:
+            wm.set_save_directory(save_dir)
+        except Exception as e:
+            logging.error(f"Failed to load save directory: {e}")
+            print(f"Error: {e}")
+            sys.exit(1)
+
+        backup_dir = wm.duplicate_world(args.source, args.target)
+        if backup_dir:
+            print(f"World duplicated successfully. Backup at {backup_dir}")
+            sys.exit(0)
+        else:
+            print("Failed to duplicate world. Check the log for details.")
+            sys.exit(1)
+
+    elif args.source or args.target:
+        print("Both --source and --target must be provided together.")
+        sys.exit(1)
+
     app = WorldDuplicatorGUI()
     app.root.mainloop()
 
