@@ -62,11 +62,14 @@ Run the script:
   python world_duplicator.py
   ```
 
-### **Using the program:**  
-- Click **"Select Save Folder"** to choose your Enshrouded save directory.  
-- Select a **source world** (the one you want to copy).  
-- Select a **target world** (the one you want to replace).  
-- Click **"Duplicate World"** to begin.  
+### **Using the program:**
+- The tool attempts to detect your save directory automatically on startup. It looks in:
+  - `%APPDATA%\\Roaming\\Enshrouded` (Windows)
+  - `~/.steam/steam/steamapps/compatdata/1203620/pfx/drive_c/users/steamuser/AppData/Roaming/Enshrouded` (Linux/Steam)
+- If detection fails, click **"Select Save Folder"** to choose your Enshrouded save directory.
+- Select a **source world** (the one you want to copy).
+- Select a **target world** (the one you want to replace).
+- Click **"Duplicate World"** to begin.
 
 ---
 
