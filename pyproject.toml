@@ -14,5 +14,8 @@ authors = [{name = "Tony"}]
 [project.scripts]
 world-duplicator = "world_duplicator:main"
 
-[tool.setuptools]
-py-modules = ["world_duplicator"]
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
