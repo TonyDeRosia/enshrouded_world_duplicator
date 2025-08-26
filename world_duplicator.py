@@ -16,6 +16,30 @@ logging.basicConfig(
     filename='world_duplicator.log'
 )
 
+
+def guess_save_directory() -> Optional[Path]:
+    """Try to locate the Enshrouded save directory on common systems."""
+    possible_locations = []
+
+    # Windows standard location
+    appdata = os.getenv("APPDATA")
+    if appdata:
+        possible_locations.append(Path(appdata) / "Enshrouded")
+        # Some setups may append an extra 'Roaming'
+        possible_locations.append(Path(appdata) / "Roaming" / "Enshrouded")
+
+    # Linux (Steam/Proton) location
+    possible_locations.append(
+        Path.home()
+        / ".steam/steam/steamapps/compatdata/1203620/pfx/drive_c/users/steamuser"
+        / "AppData/Roaming/Enshrouded"
+    )
+
+    for location in possible_locations:
+        if location.exists():
+            return location
+    return None
+
 @dataclass
 class WorldInfo:
     """Store world information with validation"""
@@ -217,6 +241,17 @@ class WorldDuplicatorGUI:
     def __init__(self):
         self.world_manager = WorldManager()
         self.setup_gui()
+
+        # Attempt to automatically detect the save directory
+        default_dir = guess_save_directory()
+        if default_dir:
+            try:
+                self.world_manager.set_save_directory(default_dir)
+                self.folder_label.config(text=str(default_dir))
+                self.refresh_world_lists()
+                self.status_label.config(text="Detected save directory")
+            except Exception as e:
+                logging.error(f"Auto-detect failed: {e}")
         
     def setup_gui(self):
         self.root = tk.Tk()
