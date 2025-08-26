@@ -11,12 +11,22 @@ import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
+
+def init_logger() -> Path:
+    """Create per-user log directory and configure logging."""
+    log_root = Path(os.environ.get("USERPROFILE", Path.home())) / ".enshrouded_world_duplicator"
+    log_root.mkdir(parents=True, exist_ok=True)
+    log_file = log_root / "world_duplicator.log"
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        filename=log_file,
+    )
+    return log_file
+
+
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    filename='world_duplicator.log'
-)
+init_logger()
 
 
 def guess_save_directory() -> Optional[Path]:
