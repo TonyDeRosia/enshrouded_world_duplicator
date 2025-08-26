@@ -215,6 +215,11 @@ class WorldManager:
         source = self.worlds[source_id]
         target = self.worlds[target_id]
 
+        # Track file operations for potential rollback
+        moved_files: List[Tuple[Path, Path]] = []
+        copied_files: List[Path] = []
+        backup_dir: Optional[Path] = None
+
         try:
             # Determine total operations for progress reporting
             total_steps = len(target.files) + len(source.files)
@@ -225,7 +230,9 @@ class WorldManager:
             backup_dir = self.save_dir / f"{target_id}_backup_{timestamp}"
             backup_dir.mkdir(parents=True, exist_ok=True)
             for file in target.files:
-                shutil.move(str(file), backup_dir / file.name)
+                dest = backup_dir / file.name
+                shutil.move(str(file), dest)
+                moved_files.append((file, dest))
                 current_step += 1
                 message = f"Moved {file.name} to {backup_dir}"
                 logging.info(message)
@@ -238,6 +245,7 @@ class WorldManager:
                 new_name = source_file.name.replace(source_id, target_id)
                 target_file = self.save_dir / new_name
                 shutil.copy2(source_file, target_file)
+                copied_files.append(target_file)
                 current_step += 1
                 message = f"Copied {source_file.name} to {target_file.name}"
                 logging.info(message)
@@ -283,6 +291,31 @@ class WorldManager:
 
         except Exception as e:
             logging.error(f"Failed to duplicate world: {e}")
+            rollback_success = True
+            try:
+                # Remove any partially copied files
+                for path in copied_files:
+                    if path.exists():
+                        path.unlink()
+
+                # Restore moved files from backup
+                for original, backup in moved_files:
+                    if backup.exists():
+                        shutil.move(str(backup), original)
+
+                # Clean up backup directory if empty
+                if backup_dir and backup_dir.exists():
+                    try:
+                        backup_dir.rmdir()
+                    except OSError:
+                        pass
+
+                logging.info("Rollback successful")
+            except Exception as rollback_error:
+                rollback_success = False
+                logging.error(f"Rollback failed: {rollback_error}")
+            if rollback_success:
+                logging.info("Rollback completed without errors")
             return None
 
 class WorldDuplicatorGUI:

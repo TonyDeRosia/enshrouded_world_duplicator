@@ -93,3 +93,31 @@ def test_duplicate_world(sample_save_dir: Path, monkeypatch: pytest.MonkeyPatch)
     world2_meta = next(w for w in metadata["worlds"] if w["id"] == "world2")
     assert world2_meta["name"] == "Copy of World One"
     assert world2_meta["lastPlayed"] == 1234567890
+
+
+def test_duplicate_world_rollback(sample_save_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure target files are restored if duplication fails."""
+    wm = WorldManager()
+    wm.set_save_directory(sample_save_dir)
+
+    # Force shutil.copy2 to fail after first call
+    original_copy = world_duplicator.shutil.copy2
+
+    def failing_copy(src, dst, *args, **kwargs):
+        if failing_copy.called:
+            raise RuntimeError("copy failed")
+        failing_copy.called = True
+        return original_copy(src, dst, *args, **kwargs)
+
+    failing_copy.called = False
+    monkeypatch.setattr(world_duplicator.shutil, "copy2", failing_copy)
+
+    result = wm.duplicate_world("world1", "world2")
+    assert result is None
+
+    # Target files should be restored to their original state
+    assert (sample_save_dir / "world2-data").read_text() == "target"
+    assert (sample_save_dir / "world2-index").exists()
+
+    # No backup directories should remain
+    assert not any(sample_save_dir.glob("world2_backup_*"))
