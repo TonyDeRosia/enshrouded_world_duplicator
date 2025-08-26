@@ -3,9 +3,6 @@ from pathlib import Path
 
 import pytest
 
-import sys
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
 import world_duplicator
 from world_duplicator import WorldManager
 
