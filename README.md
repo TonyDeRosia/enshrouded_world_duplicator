@@ -75,6 +75,12 @@ Provide a custom save directory if it cannot be auto-detected:
 python world_duplicator.py --source <src_id> --target <dst_id> --save-dir "/path/to/Enshrouded"
 ```
 
+Run unattended without confirmation prompts by adding the `--yes` flag:
+
+```shell
+python world_duplicator.py --source <src_id> --target <dst_id> --yes
+```
+
 Both `--source` and `--target` must be valid world IDs. The script will report success or failure via the command line.
 
 ### **Using the program:**
