@@ -4,7 +4,7 @@ import shutil
 import logging
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Callable
 import time
 import argparse
 import sys
@@ -183,8 +183,25 @@ class WorldManager:
         self._world_list_cache = sorted(world_list, key=lambda x: x[0].lower())
         return self._world_list_cache
     
-    def duplicate_world(self, source_id: str, target_id: str) -> Optional[Path]:
-        """Copy world files and update metadata"""
+    def duplicate_world(
+        self,
+        source_id: str,
+        target_id: str,
+        progress_callback: Optional[Callable[[int, int, str], None]] = None,
+    ) -> Optional[Path]:
+        """Copy world files and update metadata
+
+        Parameters
+        ----------
+        source_id: str
+            ID of the world to copy from
+        target_id: str
+            ID of the world to overwrite
+        progress_callback: Callable[[int, int, str], None], optional
+            Callback invoked after each file move/copy with the current step,
+            total steps and a human readable message. Use this to update
+            progress bars or print verbose output.
+        """
         if not (source_id in self.worlds and target_id in self.worlds):
             logging.error(f"Invalid world IDs - source: {source_id}, target: {target_id}")
             return None
@@ -193,12 +210,21 @@ class WorldManager:
         target = self.worlds[target_id]
 
         try:
+            # Determine total operations for progress reporting
+            total_steps = len(target.files) + len(source.files)
+            current_step = 0
+
             # Move existing target files to backup
             timestamp = time.strftime('%Y%m%d%H%M%S')
             backup_dir = self.save_dir / f"{target_id}_backup_{timestamp}"
             backup_dir.mkdir(parents=True, exist_ok=True)
             for file in target.files:
                 shutil.move(str(file), backup_dir / file.name)
+                current_step += 1
+                message = f"Moved {file.name} to {backup_dir}"
+                logging.info(message)
+                if progress_callback:
+                    progress_callback(current_step, total_steps, message)
             logging.info(f"Backup of target world created at {backup_dir}")
 
             # Copy all source files to target
@@ -206,6 +232,11 @@ class WorldManager:
                 new_name = source_file.name.replace(source_id, target_id)
                 target_file = self.save_dir / new_name
                 shutil.copy2(source_file, target_file)
+                current_step += 1
+                message = f"Copied {source_file.name} to {target_file.name}"
+                logging.info(message)
+                if progress_callback:
+                    progress_callback(current_step, total_steps, message)
 
             # Update target's index file with new timestamp and any additional data
             target_index = self.save_dir / f"{target_id}-index"
@@ -308,10 +339,14 @@ class WorldDuplicatorGUI:
                                          command=self.duplicate_world,
                                          state=tk.DISABLED)
         self.duplicate_button.pack()
-        
+
         # Add status label
         self.status_label = ttk.Label(main_frame, text="", wraplength=800)
         self.status_label.pack(pady=(5, 0))
+
+        # Progress bar for duplication
+        self.progress_bar = ttk.Progressbar(main_frame, mode='determinate')
+        self.progress_bar.pack(fill=tk.X, pady=(5, 0))
     
     def create_world_frame(self, parent, title):
         frame = ttk.LabelFrame(parent, text=title, padding="5", style='World.TLabelframe')
@@ -366,7 +401,13 @@ class WorldDuplicatorGUI:
                 seen_names.add(display_name)
                 self.source_list.insert(tk.END, display_name)
                 self.target_list.insert(tk.END, display_name)
-    
+
+    def update_progress(self, step: int, total: int, message: str) -> None:
+        """Update progress bar and status label"""
+        self.progress_bar.config(maximum=total, value=step)
+        self.status_label.config(text=message)
+        self.root.update_idletasks()
+
     def check_selection(self, _=None):
         """Enable/disable duplicate button based on selections"""
         source_sel = self.source_list.curselection()
@@ -396,7 +437,13 @@ class WorldDuplicatorGUI:
             "Confirm", f"Replace '{target_display}' with a copy of '{source_display}'?"
         ):
             try:
-                backup_dir = self.world_manager.duplicate_world(source_id, target_id)
+                # Reset progress bar
+                self.progress_bar.config(value=0)
+                self.status_label.config(text="Starting duplication...")
+
+                backup_dir = self.world_manager.duplicate_world(
+                    source_id, target_id, progress_callback=self.update_progress
+                )
                 if backup_dir:
                     self.refresh_world_lists()
                     messagebox.showinfo(
@@ -456,6 +503,11 @@ def main():
         action="store_true",
         help="List available worlds and exit",
     )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Show progress for each file operation",
+    )
 
     args = parser.parse_args()
 
@@ -505,7 +557,10 @@ def main():
                 print("Operation cancelled.")
                 sys.exit(0)
 
-        backup_dir = wm.duplicate_world(args.source, args.target)
+        progress_cb = print if args.verbose else None
+        backup_dir = wm.duplicate_world(
+            args.source, args.target, progress_callback=progress_cb
+        )
         if backup_dir:
             print(f"World duplicated successfully. Backup at {backup_dir}")
             if not args.yes:

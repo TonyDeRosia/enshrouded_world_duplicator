@@ -95,6 +95,15 @@ Run unattended without confirmation prompts by adding the `--yes` flag:
 python world_duplicator.py --source <src_id> --target <dst_id> --yes
 ```
 
+Show progress for each file operation with the `--verbose` flag:
+
+```shell
+python world_duplicator.py --source <src_id> --target <dst_id> --verbose
+# Example output:
+# Moved world2-data to world2_backup_20200101000000
+# Copied world1-data to world2-data
+```
+
 List available worlds and exit:
 
 ```shell
@@ -117,6 +126,7 @@ Both `--source` and `--target` must be valid world IDs. The script will report s
 - Select a **source world** (the one you want to copy).
 - Select a **target world** (the one you want to replace).
 - Click **"Duplicate World"** to begin.
+- A progress bar and status messages show each file operation during duplication.
 
 ---
 
