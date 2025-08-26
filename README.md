@@ -28,9 +28,23 @@ Before running this tool, ensure you have:
 
 ---
 
-## **Installation**  
-1. **Save** the `world_duplicator.py` script to any location on your computer.  
-2. Ensure your system meets the requirements below.  
+## **Installation**
+
+Install using pip:
+```shell
+pip install enshrouded-world-duplicator
+```
+
+To install from a cloned repository, run:
+```shell
+pip install .
+```
+
+This provides the `world-duplicator` command.
+
+### **Manual installation**
+1. **Save** the `world_duplicator.py` script to any location on your computer.
+2. Ensure your system meets the requirements below.
 
 ### **Windows**  
 - Python’s **Tkinter** library is included by default.  
