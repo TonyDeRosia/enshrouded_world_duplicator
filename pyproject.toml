@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "enshrouded-world-duplicator"
+version = "0.1.0"
+description = "Duplicate Enshrouded game worlds via CLI or GUI"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{name = "Tony"}]
+
+[project.scripts]
+world-duplicator = "world_duplicator:main"
+
+[tool.setuptools]
+py-modules = ["world_duplicator"]
