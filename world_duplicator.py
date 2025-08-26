@@ -8,8 +8,14 @@ from typing import Dict, List, Optional, Tuple, Callable
 import time
 import argparse
 import sys
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+try:
+    import tkinter as tk
+    from tkinter import filedialog, messagebox, ttk
+    TK_AVAILABLE = True
+except ImportError:  # pragma: no cover - depends on environment
+    tk = None
+    filedialog = messagebox = ttk = None
+    TK_AVAILABLE = False
 
 
 def init_logger() -> Path:
@@ -546,13 +552,19 @@ def main():
             sys.exit(1)
 
         if not args.yes:
-            root = tk.Tk()
-            root.withdraw()
-            proceed = messagebox.askyesno(
-                "Confirm",
-                f"Replace '{args.target}' with a copy of '{args.source}'?",
-            )
-            root.destroy()
+            if TK_AVAILABLE:
+                root = tk.Tk()
+                root.withdraw()
+                proceed = messagebox.askyesno(
+                    "Confirm",
+                    f"Replace '{args.target}' with a copy of '{args.source}'?",
+                )
+                root.destroy()
+            else:
+                response = input(
+                    f"Replace '{args.target}' with a copy of '{args.source}'? [y/N]: "
+                ).strip().lower()
+                proceed = response in {"y", "yes"}
             if not proceed:
                 print("Operation cancelled.")
                 sys.exit(0)
@@ -564,12 +576,18 @@ def main():
         if backup_dir:
             print(f"World duplicated successfully. Backup at {backup_dir}")
             if not args.yes:
-                root = tk.Tk()
-                root.withdraw()
-                delete_backup = messagebox.askyesno(
-                    "Delete Backup?", f"Delete backup at {backup_dir}?"
-                )
-                root.destroy()
+                if TK_AVAILABLE:
+                    root = tk.Tk()
+                    root.withdraw()
+                    delete_backup = messagebox.askyesno(
+                        "Delete Backup?", f"Delete backup at {backup_dir}?"
+                    )
+                    root.destroy()
+                else:
+                    response = input(
+                        f"Delete backup at {backup_dir}? [y/N]: "
+                    ).strip().lower()
+                    delete_backup = response in {"y", "yes"}
                 if delete_backup:
                     try:
                         shutil.rmtree(backup_dir)
@@ -585,6 +603,12 @@ def main():
 
     elif args.source or args.target:
         print("Both --source and --target must be provided together.")
+        sys.exit(1)
+
+    if not TK_AVAILABLE:
+        print(
+            "Tkinter is not available. Install it or use command-line options (--source, --target)."
+        )
         sys.exit(1)
 
     app = WorldDuplicatorGUI(auto_confirm=args.yes)

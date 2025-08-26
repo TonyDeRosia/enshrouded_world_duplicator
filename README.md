@@ -77,7 +77,7 @@ Run the script:
   ```
 
 ### **Command-line usage**
-You can bypass the graphical interface and duplicate worlds directly from the command line:
+If the Tkinter GUI library is missing on your system, the script will fall back to command-line mode. You can duplicate worlds directly from the command line:
 
 ```shell
 python world_duplicator.py --source <world_id> --target <world_id>
@@ -159,9 +159,10 @@ C:\Users\[YourUsername]\AppData\Roaming\Enshrouded\
   sudo apt install python3
   ```
 
-#### **"No module named tkinter"**  
-- **Windows:** Reinstall Python.  
-- **Linux:** Install Tkinter (`python3-tk` or equivalent for your distribution).  
+#### **"No module named tkinter"**
+- **Windows:** Reinstall Python.
+- **Linux:** Install Tkinter (`python3-tk` or equivalent for your distribution).
+- If you cannot install Tkinter, run the tool using the command-line options described above.
 
 #### **"Permission denied" errors**  
 - **Windows:** Run the script as an **administrator**.  
