@@ -81,6 +81,18 @@ Run unattended without confirmation prompts by adding the `--yes` flag:
 python world_duplicator.py --source <src_id> --target <dst_id> --yes
 ```
 
+List available worlds and exit:
+
+```shell
+python world_duplicator.py --list
+```
+
+Include `--save-dir` if the location cannot be auto-detected:
+
+```shell
+python world_duplicator.py --list --save-dir "/path/to/Enshrouded"
+```
+
 Both `--source` and `--target` must be valid world IDs. The script will report success or failure via the command line.
 
 ### **Using the program:**
