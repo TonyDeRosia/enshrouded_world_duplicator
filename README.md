@@ -8,7 +8,7 @@ A Python-based tool that allows you to safely duplicate your Enshrouded game wor
 ### **⚠ Important Notice**  
 Before using this tool, **back up your Enshrouded save directory manually**. While this script is designed to safely duplicate worlds, unforeseen issues could result in data loss or corruption. **Proceed at your own risk.**  
 
-You can simply paste the `world_duplicator.py` into a compiler like **VS Code** and run it.
+After installation, launch the tool with the `world-duplicator` command or by running `python -m world_duplicator` from your IDE or terminal.
 
 ---
 
@@ -37,16 +37,15 @@ Install using pip:
 pip install enshrouded-world-duplicator
 ```
 
-To install from a cloned repository, run:
-```shell
-pip install .
-```
+This project exposes a `world-duplicator` entry point via `pyproject.toml`, providing an easy-to-use command-line interface.
 
-This provides the `world-duplicator` command.
-
-### **Manual installation**
-1. **Save** the `world_duplicator.py` script to any location on your computer.
-2. Ensure your system meets the requirements below.
+### **From source**
+1. Clone this repository.
+2. Install the package:
+   ```shell
+   pip install .
+   ```
+3. Run `world-duplicator` (or `python -m world_duplicator`).
 
 ### **Windows**  
 - Python’s **Tkinter** library is included by default.  
@@ -69,38 +68,43 @@ You may need to install Tkinter manually:
 
 ---
 
-## **Running the Program**  
-Run the script:
-
-- **Double-click** `world_duplicator.py`
-- **OR** open a terminal/command prompt in the script’s directory and run:
-  ```shell
-  python world_duplicator.py
-  ```
-
-### **Command-line usage**
-If the Tkinter GUI library is missing on your system, the script will fall back to command-line mode. You can duplicate worlds directly from the command line:
+## **Running the Program**
+### **GUI mode**
+Launch the graphical interface:
 
 ```shell
-python world_duplicator.py --source <world_id> --target <world_id>
+world-duplicator
+```
+
+or
+
+```shell
+python -m world_duplicator
+```
+
+### **Command-line usage**
+If the Tkinter GUI library is missing on your system, the tool will fall back to command-line mode. You can duplicate worlds directly from the command line using either entry point:
+
+```shell
+world-duplicator --source <world_id> --target <world_id>
 ```
 
 Provide a custom save directory if it cannot be auto-detected:
 
 ```shell
-python world_duplicator.py --source <src_id> --target <dst_id> --save-dir "/path/to/Enshrouded"
+world-duplicator --source <src_id> --target <dst_id> --save-dir "/path/to/Enshrouded"
 ```
 
 Run unattended without confirmation prompts by adding the `--yes` flag:
 
 ```shell
-python world_duplicator.py --source <src_id> --target <dst_id> --yes
+world-duplicator --source <src_id> --target <dst_id> --yes
 ```
 
 Show progress for each file operation with the `--verbose` flag:
 
 ```shell
-python world_duplicator.py --source <src_id> --target <dst_id> --verbose
+world-duplicator --source <src_id> --target <dst_id> --verbose
 # Example output:
 # Moved world2-data to world2_backup_20200101000000
 # Copied world1-data to world2-data
@@ -109,13 +113,13 @@ python world_duplicator.py --source <src_id> --target <dst_id> --verbose
 List available worlds and exit:
 
 ```shell
-python world_duplicator.py --list
+world-duplicator --list
 ```
 
 Include `--save-dir` if the location cannot be auto-detected:
 
 ```shell
-python world_duplicator.py --list --save-dir "/path/to/Enshrouded"
+world-duplicator --list --save-dir "/path/to/Enshrouded"
 ```
 
 Both `--source` and `--target` must be valid world IDs. The script will report success or failure via the command line.
