@@ -147,26 +147,30 @@ class WorldManager:
         self._world_list_cache = sorted(world_list, key=lambda x: x[0].lower())
         return self._world_list_cache
     
-    def duplicate_world(self, source_id: str, target_id: str) -> bool:
+    def duplicate_world(self, source_id: str, target_id: str) -> Optional[Path]:
         """Copy world files and update metadata"""
         if not (source_id in self.worlds and target_id in self.worlds):
             logging.error(f"Invalid world IDs - source: {source_id}, target: {target_id}")
-            return False
-            
+            return None
+
         source = self.worlds[source_id]
         target = self.worlds[target_id]
-        
+
         try:
-            # Remove existing target files
+            # Move existing target files to backup
+            timestamp = time.strftime('%Y%m%d%H%M%S')
+            backup_dir = self.save_dir / f"{target_id}_backup_{timestamp}"
+            backup_dir.mkdir(parents=True, exist_ok=True)
             for file in target.files:
-                file.unlink(missing_ok=True)
-            
+                shutil.move(str(file), backup_dir / file.name)
+            logging.info(f"Backup of target world created at {backup_dir}")
+
             # Copy all source files to target
             for source_file in source.files:
                 new_name = source_file.name.replace(source_id, target_id)
                 target_file = self.save_dir / new_name
                 shutil.copy2(source_file, target_file)
-            
+
             # Update target's index file with new timestamp and any additional data
             target_index = self.save_dir / f"{target_id}-index"
             if target_index.exists():
@@ -174,15 +178,15 @@ class WorldManager:
                 index_data["time"] = int(time.time())
                 index_data["deleted"] = False
                 index_data["latest"] = source.index_data.get("latest", 0)
-                
+
                 # Copy any additional fields from source index data to target index data
                 for key, value in source.index_data.items():
                     if key not in ["id", "time", "deleted"]:
                         index_data[key] = value
                         logging.info(f"Copied {key}: {value}")
-                
+
                 target_index.write_text(json.dumps(index_data, indent=2))
-            
+
             # Update metadata file
             if "worlds" in self.metadata:
                 current_time = int(time.time())
@@ -196,17 +200,17 @@ class WorldManager:
                                 world[key] = value
                                 logging.info(f"Copied {key} to metadata: {value}")
                         break
-                
+
                 metadata_file = self.save_dir / self.METADATA_FILE
                 with open(metadata_file, 'w', encoding='utf-8') as f:
                     json.dump(self.metadata, f, indent=2)
-            
+
             logging.info(f"Successfully duplicated world {source_id} to {target_id}")
-            return True
-            
+            return backup_dir
+
         except Exception as e:
             logging.error(f"Failed to duplicate world: {e}")
-            return False
+            return None
 
 class WorldDuplicatorGUI:
     """GUI for world duplication"""
@@ -340,16 +344,40 @@ class WorldDuplicatorGUI:
         source_id = next(id for name, id in worlds if name == source_display)
         target_id = next(id for name, id in worlds if name == target_display)
         
-        if messagebox.askyesno("Confirm", 
+        if messagebox.askyesno("Confirm",
                              f"Replace '{target_display}' with a copy of '{source_display}'?"):
             try:
-                if self.world_manager.duplicate_world(source_id, target_id):
-                    messagebox.showinfo("Success", "World duplicated successfully!")
+                backup_dir = self.world_manager.duplicate_world(source_id, target_id)
+                if backup_dir:
                     self.refresh_world_lists()
-                    self.status_label.config(text="World duplicated successfully")
+                    messagebox.showinfo(
+                        "Success",
+                        f"World duplicated successfully!\nBackup saved at: {backup_dir}"
+                    )
+                    if messagebox.askyesno(
+                        "Delete Backup?",
+                        f"Delete backup at {backup_dir}?"
+                    ):
+                        try:
+                            shutil.rmtree(backup_dir)
+                            logging.info(f"Deleted backup at {backup_dir}")
+                            self.status_label.config(
+                                text="World duplicated successfully; backup deleted"
+                            )
+                        except Exception as e:
+                            logging.error(f"Failed to delete backup: {e}")
+                            self.status_label.config(
+                                text=f"World duplicated; failed to delete backup: {e}"
+                            )
+                    else:
+                        self.status_label.config(
+                            text=f"World duplicated successfully; backup at {backup_dir}"
+                        )
                 else:
-                    messagebox.showerror("Error", 
-                                       "Failed to duplicate world. Check the log file.")
+                    messagebox.showerror(
+                        "Error",
+                        "Failed to duplicate world. Check the log file."
+                    )
                     self.status_label.config(text="Failed to duplicate world")
             except Exception as e:
                 messagebox.showerror("Error", str(e))
