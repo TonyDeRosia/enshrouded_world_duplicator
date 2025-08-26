@@ -250,8 +250,9 @@ class WorldManager:
 
 class WorldDuplicatorGUI:
     """GUI for world duplication"""
-    def __init__(self):
+    def __init__(self, auto_confirm: bool = False):
         self.world_manager = WorldManager()
+        self.auto_confirm = auto_confirm
         self.setup_gui()
 
         # Attempt to automatically detect the save directory
@@ -391,8 +392,9 @@ class WorldDuplicatorGUI:
         source_id = next(id for name, id in worlds if name == source_display)
         target_id = next(id for name, id in worlds if name == target_display)
         
-        if messagebox.askyesno("Confirm",
-                             f"Replace '{target_display}' with a copy of '{source_display}'?"):
+        if self.auto_confirm or messagebox.askyesno(
+            "Confirm", f"Replace '{target_display}' with a copy of '{source_display}'?"
+        ):
             try:
                 backup_dir = self.world_manager.duplicate_world(source_id, target_id)
                 if backup_dir:
@@ -401,9 +403,8 @@ class WorldDuplicatorGUI:
                         "Success",
                         f"World duplicated successfully!\nBackup saved at: {backup_dir}"
                     )
-                    if messagebox.askyesno(
-                        "Delete Backup?",
-                        f"Delete backup at {backup_dir}?"
+                    if not self.auto_confirm and messagebox.askyesno(
+                        "Delete Backup?", f"Delete backup at {backup_dir}?"
                     ):
                         try:
                             shutil.rmtree(backup_dir)
@@ -445,6 +446,11 @@ def main():
         default=guess_save_directory(),
         help="Path to Enshrouded save directory (default: auto-detected)",
     )
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Automatically answer yes to confirmation prompts",
+    )
 
     args = parser.parse_args()
 
@@ -463,9 +469,36 @@ def main():
             print(f"Error: {e}")
             sys.exit(1)
 
+        if not args.yes:
+            root = tk.Tk()
+            root.withdraw()
+            proceed = messagebox.askyesno(
+                "Confirm",
+                f"Replace '{args.target}' with a copy of '{args.source}'?",
+            )
+            root.destroy()
+            if not proceed:
+                print("Operation cancelled.")
+                sys.exit(0)
+
         backup_dir = wm.duplicate_world(args.source, args.target)
         if backup_dir:
             print(f"World duplicated successfully. Backup at {backup_dir}")
+            if not args.yes:
+                root = tk.Tk()
+                root.withdraw()
+                delete_backup = messagebox.askyesno(
+                    "Delete Backup?", f"Delete backup at {backup_dir}?"
+                )
+                root.destroy()
+                if delete_backup:
+                    try:
+                        shutil.rmtree(backup_dir)
+                        logging.info(f"Deleted backup at {backup_dir}")
+                        print("Backup deleted.")
+                    except Exception as e:
+                        logging.error(f"Failed to delete backup: {e}")
+                        print(f"Failed to delete backup: {e}")
             sys.exit(0)
         else:
             print("Failed to duplicate world. Check the log for details.")
@@ -475,7 +508,7 @@ def main():
         print("Both --source and --target must be provided together.")
         sys.exit(1)
 
-    app = WorldDuplicatorGUI()
+    app = WorldDuplicatorGUI(auto_confirm=args.yes)
     app.root.mainloop()
 
 if __name__ == "__main__":
