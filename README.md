@@ -1,5 +1,6 @@
 ## **Enshrouded World Duplicator**  
 A Python-based tool that allows you to safely duplicate your Enshrouded game worlds while preserving all data and settings.
+The duplication process is **non-destructive**—new copies are created without overwriting existing worlds.
 
 ---
 
@@ -62,11 +63,12 @@ Run the script:
   python world_duplicator.py
   ```
 
-### **Using the program:**  
-- Click **"Select Save Folder"** to choose your Enshrouded save directory.  
-- Select a **source world** (the one you want to copy).  
-- Select a **target world** (the one you want to replace).  
-- Click **"Duplicate World"** to begin.  
+### **Using the program:**
+- Click **"Select Save Folder"** to choose your Enshrouded save directory.
+- Select a **source world** (the one you want to copy).
+- Click **"Duplicate to New World"** to create a copy.
+
+The original world remains untouched, and a new world with a unique ID is added to your save directory.
 
 ---
 
@@ -122,7 +124,7 @@ If you run into errors, check the logs:
 ---
 
 ## **Safety Features**  
-- **Asks for confirmation** before overwriting worlds.  
+- **Asks for confirmation** before creating a copy.
 - **Validates** save directory and world files before proceeding.  
 - Preserves **world metadata, timestamps, and settings**.  
 - **Logs all operations** for debugging and recovery.  
@@ -146,7 +148,7 @@ If you run into errors, check the logs:
 ---
 
 ## **Final Reminder**  
-This tool **overwrites the target world completely**. Double-check your selections before confirming. **Back up your files** to avoid irreversible changes.  
+This tool creates a **new copy** of your selected world, leaving the original intact. **Back up your files** to avoid unexpected issues.
 
 Enjoy duplicating your Enshrouded worlds safely! 🚀
 

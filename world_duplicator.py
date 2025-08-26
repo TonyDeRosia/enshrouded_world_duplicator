@@ -6,6 +6,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 import time
+from uuid import uuid4
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
@@ -146,7 +147,69 @@ class WorldManager:
                 
         self._world_list_cache = sorted(world_list, key=lambda x: x[0].lower())
         return self._world_list_cache
-    
+
+    def create_world_copy(self, source_id: str) -> Optional[str]:
+        """Create a copy of a world with a new unique ID"""
+        if source_id not in self.worlds:
+            logging.error(f"Invalid source world ID: {source_id}")
+            return None
+
+        new_id = uuid4().hex
+        source = self.worlds[source_id]
+
+        try:
+            # Copy all source files to new files with the generated ID
+            for source_file in source.files:
+                new_name = source_file.name.replace(source_id, new_id)
+                target_file = self.save_dir / new_name
+                shutil.copy2(source_file, target_file)
+
+            # Update the new world's index file with fresh metadata
+            new_index = self.save_dir / f"{new_id}-index"
+            index_data = {}
+            if new_index.exists():
+                index_data = self._read_index_file(new_index)
+                index_data["time"] = int(time.time())
+                index_data["deleted"] = False
+                index_data["latest"] = source.index_data.get("latest", 0)
+
+                for key, value in source.index_data.items():
+                    if key not in ["id", "time", "deleted"]:
+                        index_data[key] = value
+
+                new_index.write_text(json.dumps(index_data, indent=2))
+
+            # Insert new world metadata entry
+            if "worlds" in self.metadata:
+                current_time = int(time.time())
+                source_meta = next(
+                    (w for w in self.metadata["worlds"] if w.get("id") == source_id),
+                    {},
+                )
+                new_meta = dict(source_meta)
+                new_meta["id"] = new_id
+                new_meta["name"] = f"Copy of {source.name}"
+                new_meta["createdAt"] = current_time
+                new_meta["lastPlayed"] = current_time
+
+                for key, value in source.index_data.items():
+                    if key not in ["id", "time", "deleted"]:
+                        new_meta[key] = value
+
+                self.metadata["worlds"].append(new_meta)
+                metadata_file = self.save_dir / self.METADATA_FILE
+                with open(metadata_file, 'w', encoding='utf-8') as f:
+                    json.dump(self.metadata, f, indent=2)
+
+            # Refresh internal world list
+            self.scan_worlds()
+            logging.info(f"Created world copy {new_id} from {source_id}")
+            return new_id
+
+        except Exception as e:
+            logging.error(f"Failed to create world copy: {e}")
+            return None
+
     def duplicate_world(self, source_id: str, target_id: str) -> bool:
         """Copy world files and update metadata"""
         if not (source_id in self.worlds and target_id in self.worlds):
@@ -236,25 +299,24 @@ class WorldDuplicatorGUI:
         ttk.Button(folder_frame, text="Select Save Folder", 
                   command=self.select_save_folder).pack(side=tk.RIGHT)
         
-        # Create selection frames
+        # Create selection frame
         selection_frame = ttk.Frame(main_frame)
         selection_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # Source frame
+
+        # Source frame only
         source_frame = self.create_world_frame(selection_frame, "Source World")
-        source_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
-        
-        # Target frame
-        target_frame = self.create_world_frame(selection_frame, "Target World (Will be replaced)")
-        target_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0))
-        
-        # Action buttons
+        source_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Action button
         button_frame = ttk.Frame(main_frame)
         button_frame.pack(fill=tk.X, pady=(10, 0))
-        
-        self.duplicate_button = ttk.Button(button_frame, text="Duplicate World",
-                                         command=self.duplicate_world,
-                                         state=tk.DISABLED)
+
+        self.duplicate_button = ttk.Button(
+            button_frame,
+            text="Duplicate to New World",
+            command=self.duplicate_to_new_world,
+            state=tk.DISABLED,
+        )
         self.duplicate_button.pack()
         
         # Add status label
@@ -292,63 +354,54 @@ class WorldDuplicatorGUI:
         try:
             self.world_manager.set_save_directory(folder)
             self.folder_label.config(text=folder)
-            self.refresh_world_lists()
+            self.refresh_world_list()
             self.status_label.config(text="Save folder loaded successfully")
             
         except Exception as e:
             messagebox.showerror("Error", str(e))
             self.status_label.config(text="Error loading save folder")
     
-    def refresh_world_lists(self):
-        """Update both world lists"""
+    def refresh_world_list(self):
+        """Update world list"""
         worlds = self.world_manager.scan_worlds()
-        
+
         # Clear existing items
         self.source_list.delete(0, tk.END)
-        self.target_list.delete(0, tk.END)
-        
+
         # Add unique entries
         seen_names = set()
         for display_name, _ in worlds:
             if display_name not in seen_names:
                 seen_names.add(display_name)
                 self.source_list.insert(tk.END, display_name)
-                self.target_list.insert(tk.END, display_name)
-    
+
     def check_selection(self, _=None):
-        """Enable/disable duplicate button based on selections"""
+        """Enable/disable duplicate button based on selection"""
         source_sel = self.source_list.curselection()
-        target_sel = self.target_list.curselection()
-        
+
         self.duplicate_button.config(
-            state=tk.NORMAL if source_sel and target_sel else tk.DISABLED
+            state=tk.NORMAL if source_sel else tk.DISABLED
         )
-    
-    def duplicate_world(self):
-        """Handle world duplication"""
+
+    def duplicate_to_new_world(self):
+        """Handle duplication into a new world"""
         source_idx = self.source_list.curselection()[0]
-        target_idx = self.target_list.curselection()[0]
-        
+
         source_display = self.source_list.get(source_idx)
-        target_display = self.target_list.get(target_idx)
-        
-        if source_display == target_display:
-            messagebox.showwarning("Warning", "Source and target worlds must be different")
-            return
-        
+
         worlds = self.world_manager.scan_worlds()
         source_id = next(id for name, id in worlds if name == source_display)
-        target_id = next(id for name, id in worlds if name == target_display)
-        
-        if messagebox.askyesno("Confirm", 
-                             f"Replace '{target_display}' with a copy of '{source_display}'?"):
+
+        if messagebox.askyesno("Confirm",
+                             f"Create a new copy of '{source_display}'?"):
             try:
-                if self.world_manager.duplicate_world(source_id, target_id):
+                new_id = self.world_manager.create_world_copy(source_id)
+                if new_id:
                     messagebox.showinfo("Success", "World duplicated successfully!")
-                    self.refresh_world_lists()
+                    self.refresh_world_list()
                     self.status_label.config(text="World duplicated successfully")
                 else:
-                    messagebox.showerror("Error", 
+                    messagebox.showerror("Error",
                                        "Failed to duplicate world. Check the log file.")
                     self.status_label.config(text="Failed to duplicate world")
             except Exception as e:
