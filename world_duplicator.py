@@ -451,8 +451,32 @@ def main():
         action="store_true",
         help="Automatically answer yes to confirmation prompts",
     )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List available worlds and exit",
+    )
 
     args = parser.parse_args()
+
+    if args.list:
+        save_dir = args.save_dir
+        if not save_dir:
+            logging.error("Save directory not specified and could not be guessed")
+            print("Error: save directory not specified and could not be guessed.")
+            sys.exit(1)
+
+        wm = WorldManager()
+        try:
+            wm.set_save_directory(save_dir)
+        except Exception as e:
+            logging.error(f"Failed to load save directory: {e}")
+            print(f"Error: {e}")
+            sys.exit(1)
+
+        for display_name, world_id in wm.scan_worlds():
+            print(f"{display_name}: {world_id}")
+        sys.exit(0)
 
     if args.source and args.target:
         save_dir = args.save_dir
