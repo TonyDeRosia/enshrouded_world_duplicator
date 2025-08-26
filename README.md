@@ -1,4 +1,6 @@
-## **Enshrouded World Duplicator**  
+## **Enshrouded World Duplicator**
+
+[![Tests](https://github.com/YOUR_GITHUB_USERNAME/enshrouded_world_duplicator/actions/workflows/test.yml/badge.svg)](https://github.com/YOUR_GITHUB_USERNAME/enshrouded_world_duplicator/actions/workflows/test.yml)  
 A Python-based tool that allows you to safely duplicate your Enshrouded game worlds while preserving all data and settings.
 
 ---
