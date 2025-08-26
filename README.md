@@ -191,11 +191,20 @@ If you run into errors, check the logs:
 - Uses **Python's built-in libraries** (no external dependencies required).  
 - Performs **safe file operations** with error handling.  
 - Maintains **all world configurations and metadata**.  
-- Works with the **latest version of Enshrouded** (as of **February 2024**).  
+- Works with the **latest version of Enshrouded** (as of **February 2024**).
+ 
+---
+
+## **Running Tests**
+This project uses `pytest` for its test suite. Run the tests from the repository root with:
+
+```shell
+pytest
+```
 
 ---
 
-## **Final Reminder**  
+## **Final Reminder**
 This tool **overwrites the target world completely**. Double-check your selections before confirming. **Back up your files** to avoid irreversible changes.  
 
 Enjoy duplicating your Enshrouded worlds safely! 🚀
